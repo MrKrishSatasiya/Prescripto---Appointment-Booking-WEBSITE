@@ -5,9 +5,11 @@ import axios from 'axios'
 import { toast } from 'react-toastify'
 import { assets } from '../assets/assets'
 
+import jsPDF from 'jspdf'
+
 const MyAppointments = () => {
 
-    const { backendUrl, token } = useContext(AppContext)
+    const { backendUrl, token, currencySymbol } = useContext(AppContext)
     const navigate = useNavigate()
 
     const [appointments, setAppointments] = useState([])
@@ -115,7 +117,91 @@ const MyAppointments = () => {
         }
     }
 
-
+    // Function to generate and download appointment details as PDF
+    const downloadAppointmentPDF = (appointment) => {
+        try {
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const margin = 20;
+            let yPos = 20;
+            
+            // Add title
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Appointment Details', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 15;
+            
+            // Add doctor info
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Doctor Information', margin, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Name: ${appointment.docData.name}`, margin, yPos);
+            yPos += 8;
+            doc.text(`Speciality: ${appointment.docData.speciality}`, margin, yPos);
+            yPos += 8;
+            doc.text('Address:', margin, yPos);
+            yPos += 8;
+            doc.text(`${appointment.docData.address.line1}`, margin, yPos);
+            yPos += 8;
+            doc.text(`${appointment.docData.address.line2}`, margin, yPos);
+            yPos += 15;
+            
+            // Add appointment details
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Appointment Details', margin, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Date: ${slotDateFormat(appointment.slotDate)}`, margin, yPos);
+            yPos += 8;
+            doc.text(`Time: ${appointment.slotTime}`, margin, yPos);
+            yPos += 8;
+            doc.text(`Status: ${appointment.isCompleted ? 'Completed' : appointment.cancelled ? 'Cancelled' : 'Scheduled'}`, margin, yPos);
+            yPos += 15;
+            
+            // Add payment details
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Payment Details', margin, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Payment Status: ${appointment.payment ? 'Paid' : 'Not Paid'}`, margin, yPos);
+            yPos += 8;
+            if (appointment.payment) {
+                // Check if payment details exist in the payment object
+                const paymentMethod = appointment.payment.method || appointment.paymentMethod || 'Online Payment';
+                const amount = appointment.payment.amount || appointment.fees || '';
+                const transactionId = appointment.payment.transactionId || appointment.transactionId || 'N/A';
+                
+                doc.text(`Payment Method: ${paymentMethod}`, margin, yPos);
+                yPos += 8;
+                doc.text(`Amount: ${currencySymbol}${amount}`, margin, yPos);
+                yPos += 8;
+                doc.text(`Transaction ID: ${transactionId}`, margin, yPos);
+                yPos += 8;
+            }
+            
+            // Add footer
+            yPos = doc.internal.pageSize.getHeight() - 20;
+            doc.setFontSize(10);
+            doc.text('This is a computer-generated document. No signature required.', pageWidth / 2, yPos, { align: 'center' });
+            
+            // Save the PDF
+            doc.save(`Appointment_${appointment._id}.pdf`);
+            toast.success('Appointment details downloaded successfully');
+        } catch (error) {
+            console.log(error);
+            toast.error('Failed to download appointment details');
+        }
+    };
 
     useEffect(() => {
         if (token) {
@@ -145,9 +231,19 @@ const MyAppointments = () => {
                             {!item.cancelled && !item.payment && !item.isCompleted && payment !== item._id && <button onClick={() => setPayment(item._id)} className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Pay Online</button>}
                             {!item.cancelled && !item.payment && !item.isCompleted && payment === item._id && <button onClick={() => appointmentStripe(item._id)} className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-gray-100 hover:text-white transition-all duration-300 flex items-center justify-center'><img className='max-w-20 max-h-5' src={assets.stripe_logo} alt="" /></button>}
                             {!item.cancelled && !item.payment && !item.isCompleted && payment === item._id && <button onClick={() => appointmentRazorpay(item._id)} className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-gray-100 hover:text-white transition-all duration-300 flex items-center justify-center'><img className='max-w-20 max-h-5' src={assets.razorpay_logo} alt="" /></button>}
-                            {!item.cancelled && item.payment && !item.isCompleted && <button className='sm:min-w-48 py-2 border rounded text-[#696969]  bg-[#EAEFFF]'>Paid</button>}
+                            {!item.cancelled && item.payment && !item.isCompleted && (
+                                <>
+                                    <button className='sm:min-w-48 py-2 border rounded text-[#696969] bg-[#EAEFFF]'>Paid</button>
+                                    <button onClick={() => downloadAppointmentPDF(item)} className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Download Details</button>
+                                </>
+                            )}
 
-                            {item.isCompleted && <button className='sm:min-w-48 py-2 border border-green-500 rounded text-green-500'>Completed</button>}
+                            {item.isCompleted && (
+                                <>
+                                    <button className='sm:min-w-48 py-2 border border-green-500 rounded text-green-500'>Completed</button>
+                                    <button onClick={() => downloadAppointmentPDF(item)} className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Download Details</button>
+                                </>
+                            )}
                             {!item.cancelled && !item.isCompleted && <button onClick={() => cancelAppointment(item._id)} className='text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-red-600 hover:text-white transition-all duration-300'>Cancel appointment</button>}
                             {item.cancelled && !item.isCompleted && <button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500'>Appointment cancelled</button>}
                         </div>
