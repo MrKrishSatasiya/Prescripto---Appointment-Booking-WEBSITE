@@ -19,6 +19,7 @@ const Footer = () => {
             <li><a href="/" className='hover:text-gray-800'>Home</a></li>
             <li><a href="/about" className='hover:text-gray-800'>About us</a></li>
             <li><a href="/Privacy" className='hover:text-gray-800'>Privacy policy</a></li>
+            <li><a href="/Features" className='hover:text-gray-800'>Features</a></li>
           </ul>
         </div>
 
@@ -34,7 +35,7 @@ const Footer = () => {
 
       <div>
         <hr />
-        <p className='py-5 text-sm text-center'>Copyright 2024 @ Mr.Krish Satasiya - All Right Reserved.</p>
+        <p className='py-5 text-sm text-center'>Copyright 2025 @ Mr.Krish Satasiya - All Right Reserved.</p>
       </div>
 
     </div>

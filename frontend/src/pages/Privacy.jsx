@@ -106,7 +106,6 @@ const Privacy = () => {
           <li>By email: krishsatasiya44@gmail.com</li>
           <li>By visiting this page on our website: <a href="./contact/" className="text-blue-500">Contact Us</a></li>
           <li>By phone: +91 6353112999</li>
-          <li>By mail:Rajkot, India 36040</li>
         </ul>
       </section>
         </div>
